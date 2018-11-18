@@ -1,0 +1,98 @@
+#!/bin/bash
+
+DIR="$HOME/Music"
+CFG="$HOME/.config/getsong"
+REG="$HOME/.config/getsong"
+
+UA=`cat $CFG/useragent`
+REG_TITLE=`cat $REG/title.rx`
+REG_ALBUM=`cat $REG/album.rx`
+REG_ARTIST=`cat $REG/artist.rx`
+
+url="$1"
+artist="$2"
+album="$3"
+name="$4"
+begin=0
+duration=-1
+
+if [ $# -le 0 ]
+then
+  eUrl=`xclip -o -selection c`
+  echo -n "URL [$eUrl]: "
+  read url
+  if [[ -z "$url" ]]; then
+    url=$eUrl
+  fi
+fi
+
+wget -q "$url" -O "/tmp/song.html" --user-agent="$UA" --header "Accept-Language: en"
+eArtist=`cat /tmp/song.html | sed -rn "$REG_ARTIST"`
+eAlbum=`cat /tmp/song.html | sed -rn "$REG_ALBUM"`
+eTitle=`cat /tmp/song.html | sed -rn "$REG_TITLE"`
+
+if [ $# -le 4 ]
+then
+  case $# in
+    0)
+      ;&
+    1)
+      echo -n "Artist [$eArtist]: "
+      read artist
+      if [[ -z "$artist" ]]; then
+        artist=$eArtist;
+      fi
+      ;&
+    2)
+      echo -n "Album [$eAlbum]: "
+      read album
+      if [[ -z "$album" ]]; then
+        album=$eAlbum;
+      fi
+      ;&
+    3)
+      echo -n "Title [$eTitle]: "
+      read name
+      if [[ -z "$name" ]]; then
+        name=$eTitle;
+      fi
+      ;;
+  esac
+  echo -n "Start at [0]: "
+  read begin
+  if [[ -z "$begin" ]]; then
+    begin=0
+  fi
+  echo -n "Length (-1 for default) [-1]: "
+  read duration
+  if [[ -z "$duration" ]]; then
+    duration=-1
+  fi
+fi
+
+OUT="$DIR/$artist/$album/$name.mp3"
+ffinparams=""
+ffoutparams=""
+
+if [ "$begin" != 0 ]
+then
+  ffinparams="-ss $begin"
+fi
+
+if [ "$duration" != -1 ]
+then
+  ffoutparams="-t $duration"
+fi
+
+cd /home/markaos/git/youtube-dl/
+echo "Downloading..."
+python3 -m youtube_dl "$url" -o "$OUT.m4a" -f 140 >/dev/null
+echo "Converting to mp3..."
+ffmpeg -loglevel quiet $ffinparams -i "$OUT.m4a" -acodec libmp3lame -ab 320k \
+  $ffoutparams "$OUT" >/dev/null
+
+rm "$OUT.m4a"
+echo "Setting ID3 tags..."
+id3v2 -a "$artist" -A "$album" -t "$name" "$OUT" >/dev/null
+echo "Done"
+

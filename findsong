@@ -1,0 +1,70 @@
+#!/bin/bash
+
+CFG="$HOME/.config/getsong"
+REG="$HOME/.config/getsong"
+
+if [ ! -f "$CFG/yt-data-v3.key" ]; then
+  echo "Please put your YouTube Data API v3 key into $CFG/yt-data-v3.key"
+  echo "FindSong cannot search for YouTube videos without this key"
+  exit 1
+fi
+
+YT_KEY=`cat $CFG/yt-data-v3.key`
+REG_ARTIST=`cat $REG/artist.rx`
+REG_TITLE=`cat $REG/title.rx`
+
+TITLE_FORMAT='\033[1;32m'
+ARTIST_FORMAT='\033[0;32m'
+NC='\033[0m'
+
+title=$1
+artist=$2
+
+if [ $# -le 0 ]; then
+  echo -n "Title: "
+  read title
+  echo -n "Artist: "
+  read artist
+fi
+
+query="$title $artist"
+query_url=`echo "$query" | sed "s/ /+/g"`
+
+echo "Looking up \"$query\""
+echo
+
+url="https://www.googleapis.com/youtube/v3/search/"
+params="part=snippet&maxResults=5&q=$query_url&type=video&key=$YT_KEY"
+response=`curl -sS -G -d "$params" "$url"`
+
+for i in `seq 0 4`;
+do
+  fTitle=`echo $response | jq -r .items[$i].snippet.title`
+  fUrl=`echo $response | jq -r .items[$i].id.videoId`
+  fUrl="https://www.youtube.com/watch?v=$fUrl"
+  if [[ -z "$fTitle" ]]; then
+    break;
+  fi
+  wget -q "$fUrl" -O "/tmp/song.html" --user-agent "`cat $HOME/.config/getsong/useragent`" --header "Accept-Language: en"
+
+  sArtist=`cat /tmp/song.html | sed -rn "$REG_ARTIST"`
+  sTitle=`cat /tmp/song.html | sed -rn "$REG_TITLE"`
+  echo "$i: $fTitle"
+  if [[ -z "$sTitle" ]]; then
+    echo "      No music metadata"
+  else
+    echo -e "      $TITLE_FORMAT$sTitle$NC by $ARTIST_FORMAT$sArtist$NC"
+  fi
+done
+
+echo -n "Which one? [0]: "
+read number
+
+videoUrl=`echo $response | jq -r .items[$number].id.videoId`
+videoUrl="https://www.youtube.com/watch?v=$videoUrl"
+
+echo "Opening '$videoUrl' in your browser..."
+browse "$videoUrl"
+echo "Passing URL to getsong..."
+getsong "$videoUrl"
+

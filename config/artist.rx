@@ -1,0 +1,1 @@
+s/.*\{"title":\{"simpleText":"Artist"\},"contents":\[\{"runs":\[\{"text":"([^\"]+)".*/\1/p
