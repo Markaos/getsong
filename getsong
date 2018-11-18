@@ -84,7 +84,7 @@ then
   ffoutparams="-t $duration"
 fi
 
-cd /home/markaos/git/youtube-dl/
+cd $HOME/git/youtube-dl/
 echo "Downloading..."
 python3 -m youtube_dl "$url" -o "$OUT.m4a" -f 140 >/dev/null
 echo "Converting to mp3..."
