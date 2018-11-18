@@ -65,8 +65,8 @@ echo "<your key>" > "$CFG/yt-data-v3.key"
 You probably also want to put your scripts somewhere in your PATH.
 
 ## Dependencies
-getsong requires xclip (to get default URL from clipboard), ffmpeg, python3
-and youtube-dl. youtube-dl needs to be in `$HOME/git/youtube-dl` - if you
+getsong requires xclip (to get default URL from clipboard), ffmpeg, python3,
+id3v2 and youtube-dl. youtube-dl needs to be in `$HOME/git/youtube-dl` - if you
 wish to change this, open getsong in your preffered text editor, find line
 
 ```
@@ -79,3 +79,10 @@ findsong requires all of getsong deps (except xclip - getsong will never be
 called without URL, so it will never attempt to load clipboard contents) plus
 curl and jq - a simple terminal JSON parser.
 
+### Instaling deps on Ubuntu
+```
+sudo apt install id3v2 xclip ffmpeg git jq wget curl
+mkdir ~/git
+cd ~/git
+git clone "https://github.com/rg3/youtube-dl
+```
